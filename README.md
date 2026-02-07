@@ -1,9 +1,30 @@
-# helloworld
+# astrbot_plugin_simple_dice
 
-AstrBot 插件模板
+AstrBot 简单骰子插件，支持各种骰子投掷和表达式计算。
 
-A template plugin for AstrBot plugin feature
+## 功能
 
-# 支持
+### 指令投骰
+- `/r` - 投掷默认 1d20
+- `.r` - 同 `/r`
+- `/掷骰` - 同 `/r`
 
-- [插件开发文档](https://docs.astrbot.app/dev/star/plugin-new.html)
+### 支持的表达式
+| 示例 | 说明 |
+|------|------|
+| `/r 2d6` | 投掷 2 个六面骰 |
+| `/r d100` | 投掷百分骰 (0-100) |
+| `/r 3d10+5` | 3d10 + 5 |
+| `/r 2d6-1d4+3` | 混合运算 |
+| `/r (2d6+5)*2` | 支持括号 |
+
+### LLM 工具
+LLM 可自动调用 `roll_dice` 工具进行骰子投掷。
+
+## 安装
+
+将插件放置于 AstrBot 的 `data/plugins` 目录下，重启 AstrBot 即可。
+
+## License
+
+MIT
