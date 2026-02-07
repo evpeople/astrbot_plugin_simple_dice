@@ -72,8 +72,6 @@ class MyPlugin(Star):
         """可选择实现异步的插件初始化方法"""
 
     @filter.command("r")
-    @filter.command(".r")
-    @filter.command("掷骰")
     async def roll_dice(self, event: AstrMessageEvent):
         """投掷骰子
         支持格式:
@@ -87,7 +85,7 @@ class MyPlugin(Star):
 
         # 移除指令前缀，获取参数
         args = message_str
-        for prefix in ["/r ", ".r ", "掷骰 ", "/r", ".r", "掷骰"]:
+        for prefix in ["/r ", "/r"]:
             if message_str.startswith(prefix):
                 args = message_str[len(prefix):].strip()
                 break
