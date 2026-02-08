@@ -109,28 +109,27 @@ class RollDiceTool(ToolSchema):
 
                 if final_result is not None:
                     result_msg = f"掷骰结果: {final_result}"
-                    if not hidden:
-                        yield MessageChain([Plain(result_msg)])
+                    if hidden:
+                        await event.send(MessageChain([Plain("进行了一次暗投")]))
                     else:
-                        yield MessageChain([Plain("进行了一次暗投")])
+                        await event.send(MessageChain([Plain(result_msg)]))
                     return result_msg
                 else:
                     error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                    yield MessageChain([Plain(error_msg)])
+                    await event.send(MessageChain([Plain(error_msg)]))
                     return error_msg
             except Exception as e:
                 logger.error(f"骰子表达式解析错误: {e}")
                 error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                yield MessageChain([Plain(error_msg)])
+                await event.send(MessageChain([Plain(error_msg)]))
                 return error_msg
-            return
 
         # 解析简单骰子表达式
         base_value, dice_parts, _ = parse_dice_expression(dice_expr)
 
         if not dice_parts:
             error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
-            yield MessageChain([Plain(error_msg)])
+            await event.send(MessageChain([Plain(error_msg)]))
             return error_msg
 
         # 执行投骰
@@ -155,9 +154,9 @@ class RollDiceTool(ToolSchema):
                 result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] = {total}"
 
         if hidden:
-            yield MessageChain([Plain("进行了一次暗投")])
+            await event.send(MessageChain([Plain("进行了一次暗投")]))
         else:
-            yield MessageChain([Plain(result_msg)])
+            await event.send(MessageChain([Plain(result_msg)]))
         return result_msg
 
 
