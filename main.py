@@ -362,7 +362,7 @@ class MyPlugin(Star):
 
         Args:
             key(string): 键名（单个键值模式）
-            value(any): 值（单个键值模式，支持数字、字符串、列表、字典）
+            value(object): 值（单个键值模式，支持数字、字符串、列表、字典）
             multi(string): 一行字符串更新多个属性，如 "生命30经验20"
             scope(string): 作用域，"user" 或 "group"
         '''
