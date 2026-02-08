@@ -339,8 +339,8 @@ class MyPlugin(Star):
         '''读取指定键的值。
 
         Args:
-            key: 要读取的键名
-            scope: 作用域，"user" 或 "group"
+            key(string): 要读取的键名
+            scope(string): 作用域，"user" 或 "group"
         '''
         storage_id = self._get_storage_id(scope, event)
         data = self._load_kv()
@@ -361,10 +361,10 @@ class MyPlugin(Star):
         '''写入或更新键值对。支持单个键值或一次性更新多个属性。
 
         Args:
-            key: 键名（单个键值模式）
-            value: 值（单个键值模式，支持数字、字符串、列表、字典）
-            multi: 一行字符串更新多个属性，如 "生命30经验20"
-            scope: 作用域，"user" 或 "group"
+            key(string): 键名（单个键值模式）
+            value(any): 值（单个键值模式，支持数字、字符串、列表、字典）
+            multi(string): 一行字符串更新多个属性，如 "生命30经验20"
+            scope(string): 作用域，"user" 或 "group"
         '''
         storage_id = self._get_storage_id(scope, event)
         data = self._load_kv()
@@ -409,7 +409,7 @@ class MyPlugin(Star):
         '''列出指定作用域下的所有键值对。
 
         Args:
-            scope: 作用域，"user" 或 "group"
+            scope(string): 作用域，"user" 或 "group"
         '''
         storage_id = self._get_storage_id(scope, event)
         data = self._load_kv()
@@ -423,9 +423,8 @@ class MyPlugin(Star):
         '''投掷骰子，支持各种骰子表达式。LLM 在需要随机数或进行 RPG 掷骰时可以调用此工具。
 
         Args:
-            expression(string): 骰子表达式，如 "1d20"、"2d6"、"3d10+5"、"d100" 等。默认为 "1d20"。
-                支持在末尾添加 "+key" 格式来加上 KV 存储的值作为修正值，如 "1d20+str"。
-            hidden(bool): 是否暗投。True 表示暗投，只显示"进行了一次暗投"；False 表示明投，显示具体结果。默认为 False。
+            expression(string): 骰子表达式，如 "1d20"、"2d6"、"3d10+5"、"d100" 等。默认为 "1d20"。支持在末尾添加 "+key" 格式来加上 KV 存储的值作为修正值，如 "1d20+str"。
+            hidden(boolean): 是否暗投。True 表示暗投，只显示"进行了一次暗投"；False 表示明投，显示具体结果。默认为 False。
         '''
         dice_expr = expression.strip() if expression else "1d20"
 
