@@ -3,7 +3,6 @@ import random
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
-from astrbot.core.message.message_event_result import ResultContentType
 import astrbot.api.message_components as Comp
 
 
@@ -194,37 +193,22 @@ class MyPlugin(Star):
                     result_msg = f"掷骰结果: {final_result}"
                     if hidden:
                         # 用户看到暗投，LLM 看到真实结果
-                        return MessageEventResult(
-                            chain=[Comp.Plain("进行了一次暗投")],
-                            result_content_type=ResultContentType.LLM_RESULT
-                        )
-                    return MessageEventResult(
-                        chain=[Comp.Plain(result_msg)],
-                        result_content_type=ResultContentType.LLM_RESULT
-                    )
+                        return MessageEventResult(chain=[Comp.Plain("进行了一次暗投")])
+                    return MessageEventResult(chain=[Comp.Plain(result_msg)])
                 else:
                     error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                    return MessageEventResult(
-                        chain=[Comp.Plain(error_msg)],
-                        result_content_type=ResultContentType.LLM_RESULT
-                    )
+                    return MessageEventResult(chain=[Comp.Plain(error_msg)])
             except Exception as e:
                 logger.error(f"骰子表达式解析错误: {e}")
                 error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                return MessageEventResult(
-                    chain=[Comp.Plain(error_msg)],
-                    result_content_type=ResultContentType.LLM_RESULT
-                )
+                return MessageEventResult(chain=[Comp.Plain(error_msg)])
 
         # 解析简单骰子表达式
         base_value, dice_parts, _ = parse_dice_expression(dice_expr)
 
         if not dice_parts:
             error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
-            return MessageEventResult(
-                chain=[Comp.Plain(error_msg)],
-                result_content_type=ResultContentType.LLM_RESULT
-            )
+            return MessageEventResult(chain=[Comp.Plain(error_msg)])
 
         # 执行投骰
         all_rolls = []
@@ -249,14 +233,8 @@ class MyPlugin(Star):
 
         if hidden:
             # 用户看到暗投，LLM 看到真实结果
-            return MessageEventResult(
-                chain=[Comp.Plain("进行了一次暗投")],
-                result_content_type=ResultContentType.LLM_RESULT
-            )
-        return MessageEventResult(
-            chain=[Comp.Plain(result_msg)],
-            result_content_type=ResultContentType.LLM_RESULT
-        )
+            return MessageEventResult(chain=[Comp.Plain("进行了一次暗投")])
+        return MessageEventResult(chain=[Comp.Plain(result_msg)])
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法"""
