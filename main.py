@@ -3,7 +3,7 @@ import random
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
-from astrbot.api.message_components import ResultContentType
+from astrbot.core.message.message_event_result import ResultContentType
 import astrbot.api.message_components as Comp
 
 
