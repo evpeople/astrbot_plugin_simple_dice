@@ -190,20 +190,20 @@ class MyPlugin(Star):
 
                 if final_result is not None:
                     result_msg = f"掷骰结果: {final_result}"
+                    yield result_msg
                     if not hidden:
                         yield event.plain_result(result_msg)
                     else:
                         yield event.plain_result("进行了一次暗投")
-                    yield result_msg
                 else:
                     error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                    yield event.plain_result(error_msg)
                     yield error_msg
+                    yield event.plain_result(error_msg)
             except Exception as e:
                 logger.error(f"骰子表达式解析错误: {e}")
                 error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                yield event.plain_result(error_msg)
                 yield error_msg
+                yield event.plain_result(error_msg)
             return
 
         # 解析简单骰子表达式
@@ -211,8 +211,8 @@ class MyPlugin(Star):
 
         if not dice_parts:
             error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
-            yield event.plain_result(error_msg)
             yield error_msg
+            yield event.plain_result(error_msg)
             return
 
         # 执行投骰
@@ -236,11 +236,11 @@ class MyPlugin(Star):
             else:
                 result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] = {total}"
 
+        yield result_msg
         if hidden:
             yield event.plain_result("进行了一次暗投")
         else:
             yield event.plain_result(result_msg)
-        yield result_msg
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法"""
