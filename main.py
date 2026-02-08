@@ -194,18 +194,18 @@ class MyPlugin(Star):
                     if hidden:
                         # 用户看到暗投，LLM 看到真实结果
                         user_msg = "进行了一次暗投"
-                        event.set_result(MessageEventResult(chain=[Comp.Plain(user_msg)]))
+                        yield event.chain_result([Comp.Plain(user_msg)])
                         return result_msg  # LLM 看到真实结果
-                    event.set_result(MessageEventResult(chain=[Comp.Plain(result_msg)]))
+                    yield event.chain_result([Comp.Plain(result_msg)])
                     return result_msg
                 else:
                     error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                    event.set_result(MessageEventResult(chain=[Comp.Plain(error_msg)]))
+                    yield event.chain_result([Comp.Plain(error_msg)])
                     return error_msg
             except Exception as e:
                 logger.error(f"骰子表达式解析错误: {e}")
                 error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                event.set_result(MessageEventResult(chain=[Comp.Plain(error_msg)]))
+                yield event.chain_result([Comp.Plain(error_msg)])
                 return error_msg
 
         # 解析简单骰子表达式
@@ -213,7 +213,7 @@ class MyPlugin(Star):
 
         if not dice_parts:
             error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
-            event.set_result(MessageEventResult(chain=[Comp.Plain(error_msg)]))
+            yield event.chain_result([Comp.Plain(error_msg)])
             return error_msg
 
         # 执行投骰
@@ -240,9 +240,9 @@ class MyPlugin(Star):
         if hidden:
             # 用户看到暗投，LLM 看到真实结果
             user_msg = "进行了一次暗投"
-            event.set_result(MessageEventResult(chain=[Comp.Plain(user_msg)]))
+            yield event.chain_result([Comp.Plain(user_msg)])
             return result_msg  # LLM 看到真实结果
-        event.set_result(MessageEventResult(chain=[Comp.Plain(result_msg)]))
+        yield event.chain_result([Comp.Plain(result_msg)])
         return result_msg
 
     async def terminate(self):
