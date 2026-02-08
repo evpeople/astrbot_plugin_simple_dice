@@ -192,7 +192,10 @@ class MyPlugin(Star):
                 if final_result is not None:
                     result_msg = f"掷骰结果: {final_result}"
                     if hidden:
-                        result_msg = "进行了一次暗投"
+                        # 用户看到暗投，LLM 看到真实结果
+                        user_msg = "进行了一次暗投"
+                        event.set_result(MessageEventResult(chain=[Comp.Plain(user_msg)]))
+                        return result_msg  # LLM 看到真实结果
                     event.set_result(MessageEventResult(chain=[Comp.Plain(result_msg)]))
                     return result_msg
                 else:
@@ -235,7 +238,10 @@ class MyPlugin(Star):
                 result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] = {total}"
 
         if hidden:
-            result_msg = "进行了一次暗投"
+            # 用户看到暗投，LLM 看到真实结果
+            user_msg = "进行了一次暗投"
+            event.set_result(MessageEventResult(chain=[Comp.Plain(user_msg)]))
+            return result_msg  # LLM 看到真实结果
         event.set_result(MessageEventResult(chain=[Comp.Plain(result_msg)]))
         return result_msg
 
