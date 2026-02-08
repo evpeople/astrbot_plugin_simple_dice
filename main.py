@@ -166,7 +166,7 @@ class MyPlugin(Star):
         yield event.plain_result(result_msg)
 
     @filter.llm_tool(name="roll_dice")
-    async def llm_roll_dice(self, event: AstrMessageEvent, expression: str = "1d20", hidden: bool = False) -> str:
+    async def llm_roll_dice(self, event: AstrMessageEvent, expression: str = "1d20", hidden: bool = False):
         '''投掷骰子，支持各种骰子表达式。LLM 在需要随机数或进行 RPG 掷骰时可以调用此工具。
 
         Args:
@@ -194,16 +194,17 @@ class MyPlugin(Star):
                         yield event.plain_result(result_msg)
                     else:
                         yield event.plain_result("进行了一次暗投")
-                    return result_msg
+                    yield result_msg
                 else:
                     error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
                     yield event.plain_result(error_msg)
-                    return error_msg
+                    yield error_msg
             except Exception as e:
                 logger.error(f"骰子表达式解析错误: {e}")
                 error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
                 yield event.plain_result(error_msg)
-                return error_msg
+                yield error_msg
+            return
 
         # 解析简单骰子表达式
         base_value, dice_parts, _ = parse_dice_expression(dice_expr)
@@ -211,7 +212,8 @@ class MyPlugin(Star):
         if not dice_parts:
             error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
             yield event.plain_result(error_msg)
-            return error_msg
+            yield error_msg
+            return
 
         # 执行投骰
         all_rolls = []
@@ -238,7 +240,7 @@ class MyPlugin(Star):
             yield event.plain_result("进行了一次暗投")
         else:
             yield event.plain_result(result_msg)
-        return result_msg
+        yield result_msg
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法"""
