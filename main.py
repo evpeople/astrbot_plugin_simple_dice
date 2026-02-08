@@ -1,10 +1,6 @@
 import re
 import random
-from dataclasses import field
-from astrbot.api import register_llm_tool as llm_tool
-from astrbot.api.star import ToolSchema
-from astrbot.api.event import filter, AstrMessageEvent
-from astrbot.core.message.message_event_result import MessageChain, Plain
+from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
@@ -67,99 +63,6 @@ def evaluate_expression(expr: str) -> int:
         return None
 
 
-# LLM 工具定义
-class RollDiceTool(ToolSchema):
-    """投掷骰子工具"""
-    name: str = "roll_dice"
-    description: str = "投掷骰子，支持各种骰子表达式"
-    parameters: dict = field(
-        default_factory=lambda: {
-            "type": "object",
-            "properties": {
-                "expression": {
-                    "type": "string",
-                    "description": "骰子表达式，如 '1d20'、'2d6'、'3d10+5'、'd100' 等"
-                },
-                "hidden": {
-                    "type": "boolean",
-                    "description": "是否暗投。True 表示暗投，只显示'进行了一次暗投'；False 表示明投，显示具体结果"
-                },
-            },
-            "required": ["expression"],
-        }
-    )
-
-    async def call(self, context_wrapper, expression: str = "1d20", hidden: bool = False) -> str:
-        """执行骰子投掷"""
-        event = context_wrapper.context.event
-        dice_expr = expression.strip() if expression else "1d20"
-
-        # 检查是否有括号表达式
-        if "(" in dice_expr or ")" in dice_expr:
-            try:
-                def dice_replacer(match):
-                    count = int(match.group(1)) if match.group(1) else 1
-                    faces = int(match.group(2))
-                    rolls = roll_dice(count, faces)
-                    return str(sum(rolls))
-
-                pattern = r'(\d*)d(\d+)'
-                result_expr = re.sub(pattern, dice_replacer, dice_expr, flags=re.IGNORECASE)
-                final_result = evaluate_expression(result_expr)
-
-                if final_result is not None:
-                    result_msg = f"掷骰结果: {final_result}"
-                    if hidden:
-                        await event.send(MessageChain([Plain("进行了一次暗投")]))
-                    else:
-                        await event.send(MessageChain([Plain(result_msg)]))
-                    return result_msg
-                else:
-                    error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                    await event.send(MessageChain([Plain(error_msg)]))
-                    return error_msg
-            except Exception as e:
-                logger.error(f"骰子表达式解析错误: {e}")
-                error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
-                await event.send(MessageChain([Plain(error_msg)]))
-                return error_msg
-
-        # 解析简单骰子表达式
-        base_value, dice_parts, _ = parse_dice_expression(dice_expr)
-
-        if not dice_parts:
-            error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
-            await event.send(MessageChain([Plain(error_msg)]))
-            return error_msg
-
-        # 执行投骰
-        all_rolls = []
-        total = base_value
-
-        for count, faces in dice_parts:
-            rolls = roll_dice(count, faces)
-            all_rolls.extend(rolls)
-            total += sum(rolls)
-
-        if len(all_rolls) <= 5:
-            rolls_str = ", ".join(map(str, all_rolls))
-            if base_value != 0:
-                result_msg = f"掷骰 {dice_expr}: [{rolls_str}] + {base_value} = {total}"
-            else:
-                result_msg = f"掷骰 {dice_expr}: [{rolls_str}] = {total}"
-        else:
-            if base_value != 0:
-                result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] + {base_value} = {total}"
-            else:
-                result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] = {total}"
-
-        if hidden:
-            await event.send(MessageChain([Plain("进行了一次暗投")]))
-        else:
-            await event.send(MessageChain([Plain(result_msg)]))
-        return result_msg
-
-
 @register("simple_dice", "evpeople", "一个简单的骰子", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context):
@@ -167,8 +70,6 @@ class MyPlugin(Star):
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法"""
-        # 注册 LLM 工具
-        self.context.register_llm_tool(RollDiceTool())
 
     @filter.command("r")
     async def roll_dice(self, event: AstrMessageEvent):
@@ -263,6 +164,83 @@ class MyPlugin(Star):
                     result_msg = f"掷骰 {dice_desc}: [{len(all_rolls)}个骰子] = {total}"
 
         yield event.plain_result(result_msg)
+
+    @filter.llm_tool(name="roll_dice")
+    async def llm_roll_dice(self, event: AstrMessageEvent, expression: str = "1d20", hidden: bool = False) -> str:
+        '''投掷骰子，支持各种骰子表达式。LLM 在需要随机数或进行 RPG 掷骰时可以调用此工具。
+
+        Args:
+            expression(string): 骰子表达式，如 "1d20"、"2d6"、"3d10+5"、"d100" 等。默认为 "1d20"。
+            hidden(bool): 是否暗投。True 表示暗投，只显示"进行了一次暗投"；False 表示明投，显示具体结果。默认为 False。
+        '''
+        dice_expr = expression.strip() if expression else "1d20"
+
+        # 检查是否有括号表达式
+        if "(" in dice_expr or ")" in dice_expr:
+            try:
+                def dice_replacer(match):
+                    count = int(match.group(1)) if match.group(1) else 1
+                    faces = int(match.group(2))
+                    rolls = roll_dice(count, faces)
+                    return str(sum(rolls))
+
+                pattern = r'(\d*)d(\d+)'
+                result_expr = re.sub(pattern, dice_replacer, dice_expr, flags=re.IGNORECASE)
+                final_result = evaluate_expression(result_expr)
+
+                if final_result is not None:
+                    result_msg = f"掷骰结果: {final_result}"
+                    if hidden:
+                        await event.send("进行了一次暗投")
+                    else:
+                        await event.send(result_msg)
+                    event.set_result(MessageEventResult(result=result_msg))
+                else:
+                    error_msg = "表达式解析失败，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
+                    await event.send(error_msg)
+                    event.set_result(MessageEventResult(result=error_msg))
+            except Exception as e:
+                logger.error(f"骰子表达式解析错误: {e}")
+                error_msg = f"表达式解析失败: {str(e)}，请检查格式。支持格式: 1d20, 2d6, 3d10+5, (2d6+1d8)*2 等"
+                await event.send(error_msg)
+                event.set_result(MessageEventResult(result=error_msg))
+            return
+
+        # 解析简单骰子表达式
+        base_value, dice_parts, _ = parse_dice_expression(dice_expr)
+
+        if not dice_parts:
+            error_msg = f"无效的骰子格式: {dice_expr}，请使用如: 2d6, 3d10+5, d20 等格式"
+            await event.send(error_msg)
+            event.set_result(MessageEventResult(result=error_msg))
+            return
+
+        # 执行投骰
+        all_rolls = []
+        total = base_value
+
+        for count, faces in dice_parts:
+            rolls = roll_dice(count, faces)
+            all_rolls.extend(rolls)
+            total += sum(rolls)
+
+        if len(all_rolls) <= 5:
+            rolls_str = ", ".join(map(str, all_rolls))
+            if base_value != 0:
+                result_msg = f"掷骰 {dice_expr}: [{rolls_str}] + {base_value} = {total}"
+            else:
+                result_msg = f"掷骰 {dice_expr}: [{rolls_str}] = {total}"
+        else:
+            if base_value != 0:
+                result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] + {base_value} = {total}"
+            else:
+                result_msg = f"掷骰 {dice_expr}: [{len(all_rolls)}个骰子] = {total}"
+
+        if hidden:
+            await event.send("进行了一次暗投")
+        else:
+            await event.send(result_msg)
+        event.set_result(MessageEventResult(result=result_msg))
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法"""
