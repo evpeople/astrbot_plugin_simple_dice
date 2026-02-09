@@ -186,7 +186,7 @@ class MyPlugin(Star):
                 "/kv get <键名> - 读取值\n"
                 "/kv set <键名> <值> - 设置单个值\n"
                 "/kv set <属性值对> - 批量设置，如: 生命30 经验20\n"
-                "/kv list - 列出所有数据\n"
+                "/kv list [前缀] - 列出所有数据，可选按前缀过滤\n"
                 "/kv del <键名> - 删除键"
             )
             return
@@ -246,12 +246,22 @@ class MyPlugin(Star):
                 self._save_kv(data)
                 yield event.plain_result(f"已更新: {', '.join(results)}")
 
-        elif sub_cmd == "list":
+        if sub_cmd == "list":
             storage_id = self._get_storage_id("user", event)
             data = self._load_kv()
             storage = data.get(storage_id, {})
+
+            # 支持前缀搜索
+            prefix = None
+            if len(parts) >= 3:
+                prefix = parts[2].strip()
+                storage = {k: v for k, v in storage.items() if k.startswith(prefix)}
+
             if not storage:
-                yield event.plain_result("当前无存储的数据")
+                if prefix:
+                    yield event.plain_result(f"未找到前缀为 '{prefix}' 的键值对")
+                else:
+                    yield event.plain_result("当前无存储的数据")
             else:
                 lines = [f"{k} = {v}" for k, v in storage.items()]
                 yield event.plain_result("\n".join(lines))
@@ -404,16 +414,25 @@ class MyPlugin(Star):
     async def kv_list(
         self,
         event: AstrMessageEvent,
-        scope: str = "user"
+        scope: str = "user",
+        prefix: Optional[str] = None
     ) -> str:
-        '''列出指定作用域下的所有键值对。
+        '''列出指定作用域下的所有键值对，可选按前缀过滤。
 
         Args:
             scope(string): 作用域，"user" 或 "group"
+            prefix(string, optional): 键名前缀，仅返回以此前缀开头的键值对
         '''
         storage_id = self._get_storage_id(scope, event)
         data = self._load_kv()
         storage = data.get(storage_id, {})
+
+        if prefix:
+            filtered = {k: v for k, v in storage.items() if k.startswith(prefix)}
+            if not filtered:
+                return f"未找到前缀为 '{prefix}' 的键值对"
+            return json.dumps(filtered, ensure_ascii=False, indent=2)
+
         if not storage:
             return f"当前无存储的数据"
         return json.dumps(storage, ensure_ascii=False, indent=2)
